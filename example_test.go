@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/lafriks/go-tiled"
+	"github.com/Tsukumogami-Software/go-tiled"
 )
 
 func ExampleTileset_GetTilesetTile() {

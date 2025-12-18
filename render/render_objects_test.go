@@ -23,7 +23,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/lafriks/go-tiled"
+	"github.com/Tsukumogami-Software/go-tiled"
 )
 
 func TestRenderer_RenderObjectGroup(t *testing.T) {

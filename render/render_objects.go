@@ -28,8 +28,8 @@ import (
 	"image/draw"
 	"math"
 
-	"github.com/lafriks/go-tiled"
-	"github.com/lafriks/go-tiled/internal/utils"
+	"github.com/Tsukumogami-Software/go-tiled"
+	"github.com/Tsukumogami-Software/go-tiled/internal/utils"
 
 	"github.com/disintegration/imaging"
 )

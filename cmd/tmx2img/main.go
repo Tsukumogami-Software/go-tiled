@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/lafriks/go-tiled"
-	"github.com/lafriks/go-tiled/render"
+	"github.com/Tsukumogami-Software/go-tiled"
+	"github.com/Tsukumogami-Software/go-tiled/render"
 )
 
 func main() {

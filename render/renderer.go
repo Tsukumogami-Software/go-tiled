@@ -36,7 +36,7 @@ import (
 	"path/filepath"
 
 	"github.com/disintegration/imaging"
-	"github.com/lafriks/go-tiled"
+	"github.com/Tsukumogami-Software/go-tiled"
 )
 
 var (

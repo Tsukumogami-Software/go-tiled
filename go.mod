@@ -1,4 +1,4 @@
-module github.com/lafriks/go-tiled
+module github.com/Tsukumogami-Software/go-tiled
 
 go 1.19
 

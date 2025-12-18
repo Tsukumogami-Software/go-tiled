@@ -1,13 +1,13 @@
-repo: lafriks/go-tiled
+repo: Tsukumogami-Software/go-tiled
 
 service: github
 
 groups:
-  - 
+  -
     name: BREAKING
     labels:
       - breaking
-  - 
+  -
     name: ENHANCEMENTS
     labels:
       - enhancement
@@ -15,7 +15,7 @@ groups:
     name: BUGFIXES
     labels:
       - bug
-  - 
+  -
     name: TESTING
     labels:
       - testing
