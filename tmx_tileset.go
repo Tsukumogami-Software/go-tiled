@@ -164,6 +164,10 @@ func (ts *Tileset) cacheTiles() {
 
 // GetTilesetTile returns TilesetTile by tileID
 func (ts *Tileset) GetTilesetTile(tileID uint32) (*TilesetTile, error) {
+	if tileID == 0 {
+		return nil, nil
+	}
+
 	if ts.tiles == nil {
 		ts.cacheTiles()
 	}
