@@ -100,20 +100,20 @@ func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
 	}
 	// Precache all tiles in tileset
 	if tile.Tileset.Image == nil {
-		for i := 0; i < len(tile.Tileset.Tiles); i++ {
-			if tile.Tileset.Tiles[i].ID == tile.ID {
-				sf, err := r.open(tile.Tileset.GetFileFullPath(tile.Tileset.Tiles[i].Image.Source))
-				if err != nil {
-					return nil, err
-				}
-				defer sf.Close()
-				timg, _, err = image.Decode(sf)
-				if err != nil {
-					return nil, err
-				}
-				r.tileCache[tile.Tileset.FirstGID+tile.ID] = timg
-			}
+		tilesetTile, err := tile.Tileset.GetTilesetTile(tile.ID)
+		if err != nil {
+			return nil, err
 		}
+		sf, err := r.open(tile.Tileset.GetFileFullPath(tilesetTile.Image.Source))
+		if err != nil {
+			return nil, err
+		}
+		defer sf.Close()
+		timg, _, err = image.Decode(sf)
+		if err != nil {
+			return nil, err
+		}
+		r.tileCache[tile.Tileset.FirstGID+tile.ID] = timg
 	} else {
 		sf, err := r.open(tile.Tileset.GetFileFullPath(tile.Tileset.Image.Source))
 		if err != nil {
