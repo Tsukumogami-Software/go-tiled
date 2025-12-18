@@ -52,6 +52,8 @@ type Tileset struct {
 	Tiles []*TilesetTile `xml:"tile"`
 	// Contains the list of Wang sets defined for this tileset.
 	WangSets WangSets `xml:"wangsets>wangset"`
+
+	tiles map[uint32]*TilesetTile
 }
 
 // BaseDir returns the base directory.
@@ -149,19 +151,28 @@ func (ts *Tileset) GetTileRect(tileID uint32) image.Rectangle {
 		(y+1)*ts.TileHeight+yOffset)
 }
 
+func (ts *Tileset) cacheTiles() {
+	ts.tiles = make(map[uint32]*TilesetTile, len(ts.Tiles))
+
+	for _, t := range ts.Tiles {
+		if t == nil {
+			continue
+		}
+		ts.tiles[t.ID] = t
+	}
+}
+
 // GetTilesetTile returns TilesetTile by tileID
 func (ts *Tileset) GetTilesetTile(tileID uint32) (*TilesetTile, error) {
-	var tile *TilesetTile
-	for _, t := range ts.Tiles {
-		if t.ID == tileID {
-			tile = t
-			break
-		}
+	if ts.tiles == nil {
+		ts.cacheTiles()
 	}
 
-	if tile == nil {
+	tilesetTile, ok := ts.tiles[tileID]
+
+	if !ok {
 		return nil, errors.New("no tilesetTile matches the given Id")
 	}
 
-	return tile, nil
+	return tilesetTile, nil
 }
