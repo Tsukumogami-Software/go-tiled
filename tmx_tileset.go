@@ -151,6 +151,10 @@ func (ts *Tileset) GetTileRect(tileID uint32) image.Rectangle {
 
 // GetTilesetTile returns TilesetTile by tileID
 func (ts *Tileset) GetTilesetTile(tileID uint32) (*TilesetTile, error) {
+	if tileID == 0 {
+		return nil, nil
+	}
+
 	var tile *TilesetTile
 	for _, t := range ts.Tiles {
 		if t.ID == tileID {
