@@ -25,8 +25,6 @@ package render
 import (
 	"errors"
 	"image"
-	"image/color"
-	"image/draw"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
@@ -35,8 +33,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/disintegration/imaging"
 	"github.com/Tsukumogami-Software/go-tiled"
+	"github.com/disintegration/imaging"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 var (
@@ -52,15 +51,15 @@ var (
 // RendererEngine is the interface implemented by objects that provide rendering engine for Tiled maps.
 type RendererEngine interface {
 	Init(m *tiled.Map)
-	GetFinalImageSize() image.Rectangle
+	GetFinalImageSize() (int, int)
 	RotateTileImage(tile *tiled.LayerTile, img image.Image) image.Image
-	GetTilePosition(x, y int) image.Rectangle
+	GetTilePosition(x, y int) ebiten.GeoM
 }
 
 // Renderer represents an rendering engine.
 type Renderer struct {
 	m         *tiled.Map
-	Result    *image.NRGBA // The image result after rendering using the Render functions.
+	Result    *ebiten.Image // The image result after rendering using the Render functions.
 	tileCache map[uint32]image.Image
 	engine    RendererEngine
 	fs        fs.FS
@@ -93,7 +92,7 @@ func (r *Renderer) open(f string) (io.ReadCloser, error) {
 	return r.fs.Open(filepath.ToSlash(f))
 }
 
-func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
+func (r *Renderer) getTileImage(tile *tiled.LayerTile) (*ebiten.Image, error) {
 	timg, ok := r.tileCache[tile.Tileset.FirstGID+tile.ID]
 	if ok {
 		return r.engine.RotateTileImage(tile, timg), nil
@@ -164,15 +163,15 @@ func (r *Renderer) _renderLayer(layer *tiled.Layer) error {
 				return err
 			}
 
-			pos := r.engine.GetTilePosition(x, y)
+			geom := r.engine.GetTilePosition(x, y)
 
-			if layer.Opacity < 1 {
-				mask := image.NewUniform(color.Alpha{uint8(layer.Opacity * 255)})
+			colorScale := ebiten.ColorScale{}
+			colorScale.SetA(layer.Opacity)
 
-				draw.DrawMask(r.Result, pos, img, img.Bounds().Min, mask, mask.Bounds().Min, draw.Over)
-			} else {
-				draw.Draw(r.Result, pos, img, img.Bounds().Min, draw.Over)
-			}
+			r.Result.DrawImage(img, &ebiten.DrawImageOptions{
+				GeoM: geom,
+				ColorScale: colorScale,
+			})
 
 			i++
 		}
@@ -221,7 +220,8 @@ func (r *Renderer) RenderVisibleLayers() error {
 // render a layer, make a copy of the render, clear the renderer, and repeat for each
 // layer in the Map.
 func (r *Renderer) Clear() {
-	r.Result = image.NewNRGBA(r.engine.GetFinalImageSize())
+	width, height := r.engine.GetFinalImageSize()
+	r.Result = ebiten.NewImage(width, height)
 }
 
 // SaveAsPng writes rendered layers as PNG image to provided writer.
