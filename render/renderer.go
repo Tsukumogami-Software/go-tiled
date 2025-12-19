@@ -79,7 +79,8 @@ func NewRendererWithFileSystem(m *tiled.Map, fs fs.FS) (*Renderer, error) {
 	}
 
 	r.engine.Init(r.m)
-	r.Clear()
+	width, height := r.engine.GetFinalImageSize()
+	r.Result = ebiten.NewImage(width, height)
 
 	return r, nil
 }
