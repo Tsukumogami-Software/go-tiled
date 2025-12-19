@@ -42,7 +42,7 @@ func (e *OrthogonalRendererEngine) Init(m *tiled.Map) {
 
 // GetFinalImageSize returns final image size based on map data.
 func (e *OrthogonalRendererEngine) GetFinalImageSize() (int, int) {
-	return e.m.Width*e.m.TileWidth, e.m.Height*e.m.TileHeight
+	return e.m.Width * e.m.TileWidth, e.m.Height * e.m.TileHeight
 }
 
 // RotateTileImage rotates provided tile layer.

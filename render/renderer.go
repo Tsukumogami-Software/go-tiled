@@ -93,24 +93,24 @@ func (r *Renderer) open(f string) (io.ReadCloser, error) {
 }
 
 func (r *Renderer) getTileImageFromTile(tile *tiled.LayerTile) (image.Image, error) {
-		tilesetTile, err := tile.Tileset.GetTilesetTile(tile.ID)
-		if err != nil {
-			return nil, err
-		}
+	tilesetTile, err := tile.Tileset.GetTilesetTile(tile.ID)
+	if err != nil {
+		return nil, err
+	}
 
-		sf, err := r.open(tile.Tileset.GetFileFullPath(tilesetTile.Image.Source))
-		if err != nil {
-			return nil, err
-		}
-		defer sf.Close()
+	sf, err := r.open(tile.Tileset.GetFileFullPath(tilesetTile.Image.Source))
+	if err != nil {
+		return nil, err
+	}
+	defer sf.Close()
 
-		img, _, err := image.Decode(sf)
-		if err != nil {
-			return nil, err
-		}
+	img, _, err := image.Decode(sf)
+	if err != nil {
+		return nil, err
+	}
 
-		r.tileCache[tile.Tileset.FirstGID+tile.ID] = img
-		return r.engine.RotateTileImage(tile, img), nil
+	r.tileCache[tile.Tileset.FirstGID+tile.ID] = img
+	return r.engine.RotateTileImage(tile, img), nil
 }
 
 func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (image.Image, error) {
@@ -191,9 +191,9 @@ func (r *Renderer) _renderLayer(layer *tiled.Layer) error {
 			r.Result.DrawImage(
 				ebiten.NewImageFromImage(img),
 				&ebiten.DrawImageOptions{
-					GeoM: geom,
+					GeoM:       geom,
 					ColorScale: colorScale,
-			})
+				})
 
 			i++
 		}
