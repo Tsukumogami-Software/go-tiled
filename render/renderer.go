@@ -52,7 +52,7 @@ var (
 type RendererEngine interface {
 	Init(m *tiled.Map)
 	GetFinalImageSize() (int, int)
-	RotateTileImage(tile *tiled.LayerTile, img image.Image) image.Image
+	RotateTileImage(tile *tiled.LayerTile, img *ebiten.Image) *ebiten.Image
 	GetTilePosition(x, y int) ebiten.GeoM
 }
 
@@ -60,7 +60,7 @@ type RendererEngine interface {
 type Renderer struct {
 	m         *tiled.Map
 	Result    *ebiten.Image // The image result after rendering using the Render functions.
-	tileCache map[uint32]image.Image
+	tileCache map[uint32]*ebiten.Image
 	engine    RendererEngine
 	fs        fs.FS
 }
@@ -72,7 +72,7 @@ func NewRenderer(m *tiled.Map) (*Renderer, error) {
 
 // NewRendererWithFileSystem creates new rendering engine instance with a custom file system.
 func NewRendererWithFileSystem(m *tiled.Map, fs fs.FS) (*Renderer, error) {
-	r := &Renderer{m: m, tileCache: make(map[uint32]image.Image), fs: fs}
+	r := &Renderer{m: m, tileCache: make(map[uint32]*ebiten.Image), fs: fs}
 	if r.m.Orientation == "orthogonal" {
 		r.engine = &OrthogonalRendererEngine{}
 	} else {
@@ -92,29 +92,13 @@ func (r *Renderer) open(f string) (io.ReadCloser, error) {
 	return r.fs.Open(filepath.ToSlash(f))
 }
 
-func (r *Renderer) getTileImage(tile *tiled.LayerTile) (*ebiten.Image, error) {
-	timg, ok := r.tileCache[tile.Tileset.FirstGID+tile.ID]
-	if ok {
-		return r.engine.RotateTileImage(tile, timg), nil
-	}
-	// Precache all tiles in tileset
-	if tile.Tileset.Image == nil {
+func (r *Renderer) getTileImageFromTile(tile *tiled.LayerTile) (*ebiten.Image, error) {
 		tilesetTile, err := tile.Tileset.GetTilesetTile(tile.ID)
 		if err != nil {
 			return nil, err
 		}
+
 		sf, err := r.open(tile.Tileset.GetFileFullPath(tilesetTile.Image.Source))
-		if err != nil {
-			return nil, err
-		}
-		defer sf.Close()
-		timg, _, err = image.Decode(sf)
-		if err != nil {
-			return nil, err
-		}
-		r.tileCache[tile.Tileset.FirstGID+tile.ID] = timg
-	} else {
-		sf, err := r.open(tile.Tileset.GetFileFullPath(tile.Tileset.Image.Source))
 		if err != nil {
 			return nil, err
 		}
@@ -125,16 +109,47 @@ func (r *Renderer) getTileImage(tile *tiled.LayerTile) (*ebiten.Image, error) {
 			return nil, err
 		}
 
-		for i := uint32(0); i < uint32(tile.Tileset.TileCount); i++ {
-			rect := tile.Tileset.GetTileRect(i)
-			r.tileCache[i+tile.Tileset.FirstGID] = imaging.Crop(img, rect)
-			if tile.ID == i {
-				timg = r.tileCache[i+tile.Tileset.FirstGID]
-			}
+		timg := ebiten.NewImageFromImage(img)
+		r.tileCache[tile.Tileset.FirstGID+tile.ID] = timg
+		return r.engine.RotateTileImage(tile, timg), nil
+}
+
+func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (*ebiten.Image, error) {
+	//FIXME: we should not do that in a loop wth
+	sf, err := r.open(tile.Tileset.GetFileFullPath(tile.Tileset.Image.Source))
+	if err != nil {
+		return nil, err
+	}
+	defer sf.Close()
+
+	img, _, err := image.Decode(sf)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := uint32(0); i < uint32(tile.Tileset.TileCount); i++ {
+		rect := tile.Tileset.GetTileRect(i)
+		r.tileCache[i+tile.Tileset.FirstGID] = imaging.Crop(img, rect) //TODO: ebiten.SubImage
+		if tile.ID == i {
+			timg = r.tileCache[i+tile.Tileset.FirstGID]
 		}
 	}
 
 	return r.engine.RotateTileImage(tile, timg), nil
+}
+
+func (r *Renderer) getTileImage(tile *tiled.LayerTile) (*ebiten.Image, error) {
+	timg, ok := r.tileCache[tile.Tileset.FirstGID+tile.ID]
+	if ok {
+		return r.engine.RotateTileImage(tile, timg), nil
+	}
+	// Precache all tiles in tileset
+
+	if tile.Tileset.Image == nil {
+		return r.getTileImageFromTile(tile)
+	}
+
+	return r.getTileImageFromTileset(tile)
 }
 
 func (r *Renderer) _renderLayer(layer *tiled.Layer) error {
