@@ -23,10 +23,9 @@ SOFTWARE.
 package render
 
 import (
-	"image"
+	"math"
 
 	tiled "github.com/Tsukumogami-Software/go-tiled"
-	"github.com/disintegration/imaging"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -45,32 +44,25 @@ func (e *OrthogonalRendererEngine) GetFinalImageSize() (int, int) {
 	return e.m.Width * e.m.TileWidth, e.m.Height * e.m.TileHeight
 }
 
-// RotateTileImage rotates provided tile layer.
-func (e *OrthogonalRendererEngine) RotateTileImage(tile *tiled.LayerTile, img image.Image) image.Image {
-	timg := img
-	if tile.DiagonalFlip {
-		timg = imaging.FlipH(imaging.Rotate270(timg))
-	}
-	if tile.HorizontalFlip {
-		timg = imaging.FlipH(timg)
-	}
-	if tile.VerticalFlip {
-		timg = imaging.FlipV(timg)
-	}
-
-	return timg
-}
-
-// GetTilePosition returns tile position in image.
-func (e *OrthogonalRendererEngine) GetTilePosition(x, y int) ebiten.GeoM {
+// GetTileGeometry returns the geometry object used to render the tile at the correct position and orientation
+func (e *OrthogonalRendererEngine) GetTileGeometry(x, y int, tile *tiled.LayerTile) ebiten.GeoM {
 	res := ebiten.GeoM{}
 	res.Translate(
 		float64(x*e.m.TileWidth),
 		float64(y*e.m.TileHeight),
 	)
-	res.Scale(
-		float64((x+1)*e.m.TileWidth),
-		float64((y+1)*e.m.TileHeight),
-	)
+	//res.Scale(
+	//	float64((x+1)*e.m.TileWidth),
+	//	float64((y+1)*e.m.TileHeight),
+	//)
+
+	if tile.DiagonalFlip {
+    res.Rotate(-math.Pi / 2)
+    res.Scale(-1, 1)
+	} else if tile.HorizontalFlip {
+		res.Scale(-1, 1)
+	} else if tile.VerticalFlip {
+		res.Scale(1, -1)
+	}
 	return res
 }
