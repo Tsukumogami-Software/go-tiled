@@ -179,8 +179,8 @@ func (r *Renderer) renderOneObject(layer *tiled.ObjectGroup, o *tiled.Object) er
 
 	if !srcSize.Eq(dstSize) {
 		geom.Scale(
-			float64(dstSize.X) / float64(srcSize.X),
-			float64(dstSize.Y) / float64(srcSize.Y),
+			float64(dstSize.X)/float64(srcSize.X),
+			float64(dstSize.Y)/float64(srcSize.Y),
 		)
 	}
 
@@ -197,7 +197,6 @@ func (r *Renderer) renderOneObject(layer *tiled.ObjectGroup, o *tiled.Object) er
 			GeoM:       geom,
 			ColorScale: colorScale,
 		})
-
 
 	return nil
 }

@@ -57,8 +57,8 @@ func (e *OrthogonalRendererEngine) GetTileGeometry(x, y int, tile *tiled.LayerTi
 	//)
 
 	if tile.DiagonalFlip {
-    res.Rotate(-math.Pi / 2)
-    res.Scale(-1, 1)
+		res.Rotate(-math.Pi / 2)
+		res.Scale(-1, 1)
 	} else if tile.HorizontalFlip {
 		res.Scale(-1, 1)
 	} else if tile.VerticalFlip {
