@@ -4,6 +4,11 @@
 
 Go library to parse Tiled map editor file format (TMX) and render map to image. Currently supports only orthogonal finite maps rendering out-of-the-box.
 This library is forked from [https://github.com/lafriks/go-tiled](lafriks/go-tiled).
+It contains a few differences with the upstream library:
+
+* Tileset.GetTilesetTile(0) returns `nil, nil` instead of erroring
+* Tileset.GetTilesetTile uses a map of tileID to tile to reduce algorithmic complexity
+* Renderer.Result is of type `*ebiten.Image` and renderer.RenderLayer uses ebitengine internally
 
 ## Installing
 
