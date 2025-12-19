@@ -24,15 +24,11 @@ package render
 
 import (
 	"image"
-	"image/color"
-	"image/draw"
 	"math"
 
 	"github.com/Tsukumogami-Software/go-tiled"
 	"github.com/Tsukumogami-Software/go-tiled/internal/utils"
 	"github.com/hajimehoshi/ebiten/v2"
-
-	"github.com/disintegration/imaging"
 )
 
 // RenderVisibleGroups renders all visible groups
@@ -192,7 +188,7 @@ func (r *Renderer) renderOneObject(layer *tiled.ObjectGroup, o *tiled.Object) er
 	colorScale.SetA(layer.Opacity)
 
 	r.Result.DrawImage(
-		img,
+		img.(*ebiten.Image),
 		&ebiten.DrawImageOptions{
 			GeoM:       geom,
 			ColorScale: colorScale,
