@@ -48,7 +48,7 @@ var (
 	ErrOutOfBounds = errors.New("tiled/render: index out of bounds")
 )
 
-// RendererEngine is the interface implemented by objects that provide rendering engine for Tiled maps.
+// RendererEngine helps compute the tile geometries
 type RendererEngine interface {
 	Init(m *tiled.Map)
 	GetFinalImageSize() (int, int)
