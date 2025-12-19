@@ -24,6 +24,7 @@ package render
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -34,7 +35,6 @@ import (
 	"path/filepath"
 
 	"github.com/Tsukumogami-Software/go-tiled"
-	"github.com/disintegration/imaging"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -60,7 +60,7 @@ type RendererEngine interface {
 type Renderer struct {
 	m         *tiled.Map
 	Result    *ebiten.Image // The image result after rendering using the Render functions.
-	tileCache map[uint32]*ebiten.Image
+	tileCache map[uint32]image.Image
 	engine    RendererEngine
 	fs        fs.FS
 }
@@ -72,7 +72,7 @@ func NewRenderer(m *tiled.Map) (*Renderer, error) {
 
 // NewRendererWithFileSystem creates new rendering engine instance with a custom file system.
 func NewRendererWithFileSystem(m *tiled.Map, fs fs.FS) (*Renderer, error) {
-	r := &Renderer{m: m, tileCache: make(map[uint32]*ebiten.Image), fs: fs}
+	r := &Renderer{m: m, tileCache: make(map[uint32]image.Image), fs: fs}
 	if r.m.Orientation == "orthogonal" {
 		r.engine = &OrthogonalRendererEngine{}
 	} else {
@@ -115,7 +115,6 @@ func (r *Renderer) getTileImageFromTile(tile *tiled.LayerTile) (*ebiten.Image, e
 }
 
 func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (*ebiten.Image, error) {
-	//FIXME: we should not do that in a loop wth
 	sf, err := r.open(tile.Tileset.GetFileFullPath(tile.Tileset.Image.Source))
 	if err != nil {
 		return nil, err
@@ -126,24 +125,32 @@ func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (*ebiten.Image
 	if err != nil {
 		return nil, err
 	}
+	eimg := ebiten.NewImageFromImage(img)
 
+	// Precache all tiles in tileset
+	var timg *ebiten.Image
 	for i := uint32(0); i < uint32(tile.Tileset.TileCount); i++ {
 		rect := tile.Tileset.GetTileRect(i)
-		r.tileCache[i+tile.Tileset.FirstGID] = imaging.Crop(img, rect) //TODO: ebiten.SubImage
+		r.tileCache[i+tile.Tileset.FirstGID] = eimg.SubImage(rect)
 		if tile.ID == i {
-			timg = r.tileCache[i+tile.Tileset.FirstGID]
+			timg = ebiten.NewImageFromImage(r.tileCache[i+tile.Tileset.FirstGID])
 		}
 	}
 
-	return r.engine.RotateTileImage(tile, timg), nil
+	if timg != nil {
+		return r.engine.RotateTileImage(tile, timg), nil
+	}
+	return nil, errors.New(
+		fmt.Sprintf("Tile image not found in tileset: %d", tile.ID),
+	)
 }
 
 func (r *Renderer) getTileImage(tile *tiled.LayerTile) (*ebiten.Image, error) {
 	timg, ok := r.tileCache[tile.Tileset.FirstGID+tile.ID]
 	if ok {
-		return r.engine.RotateTileImage(tile, timg), nil
+		res := ebiten.NewImageFromImage(timg)
+		return r.engine.RotateTileImage(tile, res), nil
 	}
-	// Precache all tiles in tileset
 
 	if tile.Tileset.Image == nil {
 		return r.getTileImageFromTile(tile)
