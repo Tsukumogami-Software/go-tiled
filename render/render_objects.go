@@ -24,14 +24,11 @@ package render
 
 import (
 	"image"
-	"image/color"
-	"image/draw"
 	"math"
 
 	"github.com/Tsukumogami-Software/go-tiled"
 	"github.com/Tsukumogami-Software/go-tiled/internal/utils"
-
-	"github.com/disintegration/imaging"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // RenderVisibleGroups renders all visible groups
@@ -170,65 +167,32 @@ func (r *Renderer) renderOneObject(layer *tiled.ObjectGroup, o *tiled.Object) er
 		return err
 	}
 
+	geom := ebiten.GeoM{}
+
 	bounds := img.Bounds()
 	srcSize := bounds.Size()
 	dstSize := image.Pt(int(o.Width), int(o.Height))
 
 	if !srcSize.Eq(dstSize) {
-		img = imaging.Resize(img, dstSize.X, dstSize.Y, imaging.NearestNeighbor)
+		geom.Scale(
+			float64(dstSize.X)/float64(srcSize.X),
+			float64(dstSize.Y)/float64(srcSize.Y),
+		)
 	}
 
-	var originPoint image.Point
-
-	img, originPoint = r._rotateObjectImage(img, o.Rotation)
-
-	bounds = img.Bounds()
-	pos := bounds.Add(image.Pt(int(o.X), int(o.Y)).Sub(originPoint))
-
-	if layer.Opacity < 1 {
-		mask := image.NewUniform(color.Alpha{uint8(layer.Opacity * 255)})
-
-		draw.DrawMask(r.Result, pos, img, img.Bounds().Min, mask, mask.Bounds().Min, draw.Over)
-	} else {
-		draw.Draw(r.Result, pos, img, img.Bounds().Min, draw.Over)
+	if o.Rotation != 0 {
+		geom.Rotate(o.Rotation * math.Pi / 180.0)
 	}
+
+	colorScale := ebiten.ColorScale{}
+	colorScale.SetA(layer.Opacity)
+
+	r.Result.DrawImage(
+		img.(*ebiten.Image),
+		&ebiten.DrawImageOptions{
+			GeoM:       geom,
+			ColorScale: colorScale,
+		})
 
 	return nil
-}
-
-func (r *Renderer) _rotateObjectImage(img image.Image, rotation float64) (newImage image.Image, originPoint image.Point) {
-	bounds := img.Bounds()
-	w := bounds.Dx()
-	h := bounds.Dy()
-	points := []image.Point{
-		image.Pt(0, 0),
-		image.Pt(w-1, 0),
-		image.Pt(w-1, h-1),
-		image.Pt(0, h-1),
-	}
-
-	sin, cos := math.Sincos(math.Pi * rotation / 180)
-
-	rotatedPointsX := []float64{}
-	rotatedPointsY := []float64{}
-
-	for _, p := range points {
-		x := float64(p.X)
-		y := float64(p.Y)
-
-		rotatedPointsX = append(rotatedPointsX, x*cos-y*sin)
-		rotatedPointsY = append(rotatedPointsY, x*sin+y*cos)
-	}
-
-	rotatedMinX := rotatedPointsX[0]
-	rotatedMinY := rotatedPointsY[0]
-
-	for i := 1; i < 4; i++ {
-		rotatedMinX = math.Min(rotatedMinX, rotatedPointsX[i])
-		rotatedMinY = math.Min(rotatedMinY, rotatedPointsY[i])
-	}
-
-	originPoint = image.Pt(int(rotatedPointsX[3]-rotatedMinX), int(rotatedPointsY[3]-rotatedMinY))
-
-	return imaging.Rotate(img, -rotation, color.RGBA{}), originPoint
 }

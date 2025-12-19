@@ -48,12 +48,11 @@ var (
 	ErrOutOfBounds = errors.New("tiled/render: index out of bounds")
 )
 
-// RendererEngine is the interface implemented by objects that provide rendering engine for Tiled maps.
+// RendererEngine helps compute the tile geometries
 type RendererEngine interface {
 	Init(m *tiled.Map)
 	GetFinalImageSize() (int, int)
-	RotateTileImage(tile *tiled.LayerTile, img image.Image) image.Image
-	GetTilePosition(x, y int) ebiten.GeoM
+	GetTileGeometry(x, y int, tile *tiled.LayerTile) ebiten.GeoM
 }
 
 // Renderer represents an rendering engine.
@@ -80,7 +79,8 @@ func NewRendererWithFileSystem(m *tiled.Map, fs fs.FS) (*Renderer, error) {
 	}
 
 	r.engine.Init(r.m)
-	r.Clear()
+	width, height := r.engine.GetFinalImageSize()
+	r.Result = ebiten.NewImage(width, height)
 
 	return r, nil
 }
@@ -109,8 +109,9 @@ func (r *Renderer) getTileImageFromTile(tile *tiled.LayerTile) (image.Image, err
 		return nil, err
 	}
 
-	r.tileCache[tile.Tileset.FirstGID+tile.ID] = img
-	return r.engine.RotateTileImage(tile, img), nil
+	res := ebiten.NewImageFromImage(img)
+	r.tileCache[tile.Tileset.FirstGID+tile.ID] = res
+	return res, nil
 }
 
 func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (image.Image, error) {
@@ -127,17 +128,17 @@ func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (image.Image, 
 	eimg := ebiten.NewImageFromImage(img)
 
 	// Precache all tiles in tileset
-	var timg image.Image
+	var res image.Image
 	for i := uint32(0); i < uint32(tile.Tileset.TileCount); i++ {
 		rect := tile.Tileset.GetTileRect(i)
 		r.tileCache[i+tile.Tileset.FirstGID] = eimg.SubImage(rect)
 		if tile.ID == i {
-			timg = r.tileCache[i+tile.Tileset.FirstGID]
+			res = r.tileCache[i+tile.Tileset.FirstGID]
 		}
 	}
 
-	if timg != nil {
-		return r.engine.RotateTileImage(tile, timg), nil
+	if res != nil {
+		return res, nil
 	}
 	return nil, errors.New(
 		fmt.Sprintf("Tile image not found in tileset: %d", tile.ID),
@@ -147,7 +148,7 @@ func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (image.Image, 
 func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
 	timg, ok := r.tileCache[tile.Tileset.FirstGID+tile.ID]
 	if ok {
-		return r.engine.RotateTileImage(tile, timg), nil
+		return timg, nil
 	}
 
 	if tile.Tileset.Image == nil {
@@ -173,23 +174,24 @@ func (r *Renderer) _renderLayer(layer *tiled.Layer) error {
 	i := 0
 	for y := ys; y*yi < ye; y = y + yi {
 		for x := xs; x*xi < xe; x = x + xi {
-			if layer.Tiles[i].IsNil() {
+			tile := layer.Tiles[i]
+			if tile == nil || tile.IsNil() {
 				i++
 				continue
 			}
 
-			img, err := r.getTileImage(layer.Tiles[i])
+			img, err := r.getTileImage(tile)
 			if err != nil {
 				return err
 			}
 
-			geom := r.engine.GetTilePosition(x, y)
+			geom := r.engine.GetTileGeometry(x, y, tile)
 
 			colorScale := ebiten.ColorScale{}
 			colorScale.SetA(layer.Opacity)
 
 			r.Result.DrawImage(
-				ebiten.NewImageFromImage(img),
+				img.(*ebiten.Image),
 				&ebiten.DrawImageOptions{
 					GeoM:       geom,
 					ColorScale: colorScale,
@@ -242,8 +244,7 @@ func (r *Renderer) RenderVisibleLayers() error {
 // render a layer, make a copy of the render, clear the renderer, and repeat for each
 // layer in the Map.
 func (r *Renderer) Clear() {
-	width, height := r.engine.GetFinalImageSize()
-	r.Result = ebiten.NewImage(width, height)
+	r.Result.Clear()
 }
 
 // SaveAsPng writes rendered layers as PNG image to provided writer.
