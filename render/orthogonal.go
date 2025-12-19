@@ -25,8 +25,9 @@ package render
 import (
 	"image"
 
-	"github.com/disintegration/imaging"
 	tiled "github.com/Tsukumogami-Software/go-tiled"
+	"github.com/disintegration/imaging"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // OrthogonalRendererEngine represents orthogonal rendering engine.
@@ -40,8 +41,8 @@ func (e *OrthogonalRendererEngine) Init(m *tiled.Map) {
 }
 
 // GetFinalImageSize returns final image size based on map data.
-func (e *OrthogonalRendererEngine) GetFinalImageSize() image.Rectangle {
-	return image.Rect(0, 0, e.m.Width*e.m.TileWidth, e.m.Height*e.m.TileHeight)
+func (e *OrthogonalRendererEngine) GetFinalImageSize() (int, int) {
+	return e.m.Width*e.m.TileWidth, e.m.Height*e.m.TileHeight
 }
 
 // RotateTileImage rotates provided tile layer.
@@ -61,9 +62,15 @@ func (e *OrthogonalRendererEngine) RotateTileImage(tile *tiled.LayerTile, img im
 }
 
 // GetTilePosition returns tile position in image.
-func (e *OrthogonalRendererEngine) GetTilePosition(x, y int) image.Rectangle {
-	return image.Rect(x*e.m.TileWidth,
-		y*e.m.TileHeight,
-		(x+1)*e.m.TileWidth,
-		(y+1)*e.m.TileHeight)
+func (e *OrthogonalRendererEngine) GetTilePosition(x, y int) ebiten.GeoM {
+	res := ebiten.GeoM{}
+	res.Translate(
+		float64(x*e.m.TileWidth),
+		float64(y*e.m.TileHeight),
+	)
+	res.Scale(
+		float64((x+1)*e.m.TileWidth),
+		float64((y+1)*e.m.TileHeight),
+	)
+	return res
 }

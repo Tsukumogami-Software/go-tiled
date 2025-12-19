@@ -52,7 +52,7 @@ var (
 type RendererEngine interface {
 	Init(m *tiled.Map)
 	GetFinalImageSize() (int, int)
-	RotateTileImage(tile *tiled.LayerTile, img *ebiten.Image) *ebiten.Image
+	RotateTileImage(tile *tiled.LayerTile, img image.Image) image.Image
 	GetTilePosition(x, y int) ebiten.GeoM
 }
 
@@ -92,7 +92,7 @@ func (r *Renderer) open(f string) (io.ReadCloser, error) {
 	return r.fs.Open(filepath.ToSlash(f))
 }
 
-func (r *Renderer) getTileImageFromTile(tile *tiled.LayerTile) (*ebiten.Image, error) {
+func (r *Renderer) getTileImageFromTile(tile *tiled.LayerTile) (image.Image, error) {
 		tilesetTile, err := tile.Tileset.GetTilesetTile(tile.ID)
 		if err != nil {
 			return nil, err
@@ -109,12 +109,11 @@ func (r *Renderer) getTileImageFromTile(tile *tiled.LayerTile) (*ebiten.Image, e
 			return nil, err
 		}
 
-		timg := ebiten.NewImageFromImage(img)
-		r.tileCache[tile.Tileset.FirstGID+tile.ID] = timg
-		return r.engine.RotateTileImage(tile, timg), nil
+		r.tileCache[tile.Tileset.FirstGID+tile.ID] = img
+		return r.engine.RotateTileImage(tile, img), nil
 }
 
-func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (*ebiten.Image, error) {
+func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (image.Image, error) {
 	sf, err := r.open(tile.Tileset.GetFileFullPath(tile.Tileset.Image.Source))
 	if err != nil {
 		return nil, err
@@ -128,12 +127,12 @@ func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (*ebiten.Image
 	eimg := ebiten.NewImageFromImage(img)
 
 	// Precache all tiles in tileset
-	var timg *ebiten.Image
+	var timg image.Image
 	for i := uint32(0); i < uint32(tile.Tileset.TileCount); i++ {
 		rect := tile.Tileset.GetTileRect(i)
 		r.tileCache[i+tile.Tileset.FirstGID] = eimg.SubImage(rect)
 		if tile.ID == i {
-			timg = ebiten.NewImageFromImage(r.tileCache[i+tile.Tileset.FirstGID])
+			timg = r.tileCache[i+tile.Tileset.FirstGID]
 		}
 	}
 
@@ -145,11 +144,10 @@ func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (*ebiten.Image
 	)
 }
 
-func (r *Renderer) getTileImage(tile *tiled.LayerTile) (*ebiten.Image, error) {
+func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
 	timg, ok := r.tileCache[tile.Tileset.FirstGID+tile.ID]
 	if ok {
-		res := ebiten.NewImageFromImage(timg)
-		return r.engine.RotateTileImage(tile, res), nil
+		return r.engine.RotateTileImage(tile, timg), nil
 	}
 
 	if tile.Tileset.Image == nil {
@@ -190,9 +188,11 @@ func (r *Renderer) _renderLayer(layer *tiled.Layer) error {
 			colorScale := ebiten.ColorScale{}
 			colorScale.SetA(layer.Opacity)
 
-			r.Result.DrawImage(img, &ebiten.DrawImageOptions{
-				GeoM: geom,
-				ColorScale: colorScale,
+			r.Result.DrawImage(
+				ebiten.NewImageFromImage(img),
+				&ebiten.DrawImageOptions{
+					GeoM: geom,
+					ColorScale: colorScale,
 			})
 
 			i++
