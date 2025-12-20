@@ -57,11 +57,11 @@ type RendererEngine interface {
 
 // Renderer represents an rendering engine.
 type Renderer struct {
-	m         *tiled.Map
-	Result    *ebiten.Image // The image result after rendering using the Render functions.
-	tileCache map[uint32]image.Image
-	engine    RendererEngine
-	fs        fs.FS
+	m            *tiled.Map
+	Result       *ebiten.Image // The image result after rendering using the Render functions.
+	tileCache    map[uint32]image.Image
+	engine       RendererEngine
+	fs           fs.FS
 	tilesetCache *TilesetCache
 }
 

@@ -13,13 +13,13 @@ import (
 
 type TilesetCache struct {
 	cache map[string]map[uint32]image.Image
-	fs fs.FS
+	fs    fs.FS
 }
 
 func NewTilesetCache(fs fs.FS) *TilesetCache {
 	return &TilesetCache{
 		cache: map[string]map[uint32]image.Image{},
-		fs: fs,
+		fs:    fs,
 	}
 }
 
