@@ -11,11 +11,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// TilesetCache is used to share tileset images between multiple renderers
 type TilesetCache struct {
 	cache map[string]map[uint32]image.Image
 	fs    fs.FS
 }
 
+// NewTilesetCache creates a TilesetCache with an optional filesystem (pointing to an embedded tiled project)
 func NewTilesetCache(fs fs.FS) *TilesetCache {
 	return &TilesetCache{
 		cache: map[string]map[uint32]image.Image{},
