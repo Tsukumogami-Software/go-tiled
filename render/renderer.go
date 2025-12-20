@@ -57,11 +57,12 @@ type RendererEngine interface {
 
 // Renderer represents an rendering engine.
 type Renderer struct {
-	m         *tiled.Map
-	Result    *ebiten.Image // The image result after rendering using the Render functions.
-	tileCache map[uint32]image.Image
-	engine    RendererEngine
-	fs        fs.FS
+	m            *tiled.Map
+	Result       *ebiten.Image // The image result after rendering using the Render functions.
+	tileCache    map[uint32]image.Image
+	engine       RendererEngine
+	fs           fs.FS
+	tilesetCache *TilesetCache
 }
 
 // NewRenderer creates new rendering engine instance.
@@ -83,6 +84,11 @@ func NewRendererWithFileSystem(m *tiled.Map, fs fs.FS) (*Renderer, error) {
 	r.Result = ebiten.NewImage(width, height)
 
 	return r, nil
+}
+
+// UseTilesetCache is used to set a shared TilesetCache
+func (r *Renderer) UseTilesetCache(tilesetCache *TilesetCache) {
+	r.tilesetCache = tilesetCache
 }
 
 func (r *Renderer) open(f string) (io.ReadCloser, error) {
@@ -140,9 +146,7 @@ func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (image.Image, 
 	if res != nil {
 		return res, nil
 	}
-	return nil, errors.New(
-		fmt.Sprintf("Tile image not found in tileset: %d", tile.ID),
-	)
+	return nil, fmt.Errorf("Tile image not found in tileset: %d", tile.ID)
 }
 
 func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
@@ -153,6 +157,10 @@ func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
 
 	if tile.Tileset.Image == nil {
 		return r.getTileImageFromTile(tile)
+	}
+
+	if r.tilesetCache != nil {
+		return r.tilesetCache.GetTileImage(tile)
 	}
 
 	return r.getTileImageFromTileset(tile)
