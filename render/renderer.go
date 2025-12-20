@@ -146,9 +146,7 @@ func (r *Renderer) getTileImageFromTileset(tile *tiled.LayerTile) (image.Image, 
 	if res != nil {
 		return res, nil
 	}
-	return nil, errors.New(
-		fmt.Sprintf("Tile image not found in tileset: %d", tile.ID),
-	)
+	return nil, fmt.Errorf("Tile image not found in tileset: %d", tile.ID)
 }
 
 func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
