@@ -62,6 +62,7 @@ type Renderer struct {
 	tileCache map[uint32]image.Image
 	engine    RendererEngine
 	fs        fs.FS
+	tilesetCache *TilesetCache
 }
 
 // NewRenderer creates new rendering engine instance.
@@ -83,6 +84,11 @@ func NewRendererWithFileSystem(m *tiled.Map, fs fs.FS) (*Renderer, error) {
 	r.Result = ebiten.NewImage(width, height)
 
 	return r, nil
+}
+
+// UseTilesetCache is used to set a shared TilesetCache
+func (r *Renderer) UseTilesetCache(tilesetCache *TilesetCache) {
+	r.tilesetCache = tilesetCache
 }
 
 func (r *Renderer) open(f string) (io.ReadCloser, error) {
@@ -153,6 +159,10 @@ func (r *Renderer) getTileImage(tile *tiled.LayerTile) (image.Image, error) {
 
 	if tile.Tileset.Image == nil {
 		return r.getTileImageFromTile(tile)
+	}
+
+	if r.tilesetCache != nil {
+		return r.tilesetCache.GetTileImage(tile)
 	}
 
 	return r.getTileImageFromTileset(tile)
