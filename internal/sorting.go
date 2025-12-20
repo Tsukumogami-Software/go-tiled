@@ -21,7 +21,7 @@ SOFTWARE.
 */
 
 // Package utils contains some generic internal utilities
-package utils
+package internal
 
 import (
 	"sort"
