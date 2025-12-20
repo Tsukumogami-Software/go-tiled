@@ -27,7 +27,7 @@ import (
 	"math"
 
 	"github.com/Tsukumogami-Software/go-tiled"
-	"github.com/Tsukumogami-Software/go-tiled/internal/utils"
+	"github.com/Tsukumogami-Software/go-tiled/internal"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -115,7 +115,7 @@ func (r *Renderer) _renderObjectGroup(objectGroup *tiled.ObjectGroup) error {
 	objs := objectGroup.Objects
 
 	// sort objects from left top to right down
-	objs = utils.SortAnySlice(objs, func(a, b *tiled.Object) bool {
+	objs = internal.SortAnySlice(objs, func(a, b *tiled.Object) bool {
 		if a.Y != b.Y {
 			return a.Y < b.Y
 		}

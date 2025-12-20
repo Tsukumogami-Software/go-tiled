@@ -20,8 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// Package utils contains some generic internal utilities
-package utils
+// Package internal contains some generic internal utilities
+package internal
 
 import (
 	"sort"
